@@ -672,5 +672,53 @@
 
   cargar();
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "TU_PROJECT_URL";
+const SUPABASE_ANON_KEY = "TU_ANON_KEY";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// EJEMPLO para solicitantes
+const formSolicitante = document.getElementById("formSolicitante");
+
+formSolicitante.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const dni = document.getElementById("cli_dni").value.trim();
+  const nombre = document.getElementById("cli_nombre").value.trim();
+  const telefono = document.getElementById("cli_telefono").value.trim();
+  const email = document.getElementById("cli_email").value.trim();
+
+  const { error } = await sb.from("solicitante").insert([{ dni, nombre, telefono, email }]);
+  if (error) return alert("Error: " + error.message);
+
+  formSolicitante.reset();
+  cargarSolicitantes();
+});
+
+async function cargarSolicitantes() {
+  const { data, error } = await sb
+    .from("solicitante")
+    .select("*")
+    .order("id_cli", { ascending: false });
+
+  if (error) return;
+
+  document.getElementById("tablaSolicitantes").innerHTML = `
+    <table>
+      <thead><tr><th>ID</th><th>DNI</th><th>Nombre</th><th>Teléfono</th><th>Email</th></tr></thead>
+      <tbody>
+        ${data.map(s => `
+          <tr>
+            <td>${s.id_cli}</td><td>${s.dni}</td><td>${s.nombre}</td><td>${s.telefono}</td><td>${s.email ?? ""}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+cargarSolicitantes();
+</script>
 </body>
 </html>
