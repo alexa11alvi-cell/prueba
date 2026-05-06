@@ -2,108 +2,209 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sistema Trámite Documentario</title>
 
 <style>
 *{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:#f5f7fb}
 header{background:#1b4d89;color:#fff;padding:15px}
+.tabs{display:flex;gap:8px;padding:10px;background:#fff;border-bottom:1px solid #ddd}
+.tab-btn{padding:8px;border:1px solid #ccc;border-radius:8px;cursor:pointer}
+.tab-btn.active{background:#1b4d89;color:#fff}
 .container{padding:20px}
-
-form{background:#fff;padding:15px;border-radius:10px;display:grid;gap:10px;max-width:400px}
-input,button{padding:10px;border-radius:8px;border:1px solid #ccc}
-button{background:#1b4d89;color:#fff;border:none;cursor:pointer}
-
-table{width:100%;margin-top:20px;border-collapse:collapse;background:#fff}
+.tab{display:none}
+.tab.active{display:block}
+form{display:grid;gap:8px;background:#fff;padding:15px;border-radius:10px}
+input,select,textarea,button{padding:8px;border-radius:8px;border:1px solid #ccc}
+button{background:#1b4d89;color:#fff;border:none}
+table{width:100%;margin-top:15px;border-collapse:collapse;background:#fff}
 th,td{border:1px solid #ddd;padding:8px}
-th{background:#eef3fb}
 </style>
-
 </head>
+
 <body>
 
-<header>
-<h2>Sistema Trámite Documentario</h2>
-</header>
+<header><h2>Sistema Trámite Documentario</h2></header>
+
+<div class="tabs">
+<button class="tab-btn active" onclick="openTab('areas')">Áreas</button>
+<button class="tab-btn" onclick="openTab('documentos')">Documentos</button>
+<button class="tab-btn" onclick="openTab('usuarios')">Usuarios</button>
+<button class="tab-btn" onclick="openTab('solicitantes')">Solicitantes</button>
+<button class="tab-btn" onclick="openTab('tramites')">Trámites</button>
+</div>
 
 <div class="container">
 
-<h3>Registrar Solicitante</h3>
-
-<form id="formSolicitante">
-<input type="text" id="dni" placeholder="DNI" required>
-<input type="text" id="nombre" placeholder="Nombre" required>
-<input type="text" id="telefono" placeholder="Teléfono" required>
-<input type="email" id="email" placeholder="Email" required>
-<button type="submit">Guardar</button>
+<!-- AREAS -->
+<div id="areas" class="tab active">
+<h3>Áreas</h3>
+<form id="formArea">
+<input id="area" placeholder="Área" required>
+<input id="estado_area" placeholder="Estado">
+<button>Guardar</button>
 </form>
+<div id="tablaAreas"></div>
+</div>
 
-<h3>Lista de Solicitantes</h3>
-<div id="tabla"></div>
+<!-- DOCUMENTOS -->
+<div id="documentos" class="tab">
+<h3>Documentos</h3>
+<form id="formDocumento">
+<input id="tipo_doc" placeholder="Tipo" required>
+<input id="folios_doc" type="number" placeholder="Folios">
+<input id="estado_doc" placeholder="Estado">
+<button>Guardar</button>
+</form>
+<div id="tablaDocumentos"></div>
+</div>
+
+<!-- USUARIOS -->
+<div id="usuarios" class="tab">
+<h3>Usuarios</h3>
+<form id="formUsuario">
+<input id="usu_nombre" placeholder="Nombre">
+<input id="usu_login" placeholder="Login">
+<input id="usu_pass" placeholder="Password">
+<input id="usu_tipo" placeholder="Tipo">
+<input id="usu_estado" placeholder="Estado">
+<button>Guardar</button>
+</form>
+<div id="tablaUsuarios"></div>
+</div>
+
+<!-- SOLICITANTES -->
+<div id="solicitantes" class="tab">
+<h3>Solicitantes</h3>
+<form id="formSolicitante">
+<input id="cli_dni" placeholder="DNI">
+<input id="cli_nombre" placeholder="Nombre">
+<input id="cli_telefono" placeholder="Teléfono">
+<input id="cli_email" placeholder="Email">
+<button>Guardar</button>
+</form>
+<div id="tablaSolicitantes"></div>
+</div>
+
+<!-- TRAMITES -->
+<div id="tramites" class="tab">
+<h3>Trámites</h3>
+<form id="formTramite">
+<select id="tram_idusu"></select>
+<select id="tram_id_doc"></select>
+<select id="tram_id_cli"></select>
+<input id="tram_estado" placeholder="Estado">
+<button>Guardar</button>
+</form>
+<div id="tablaTramites"></div>
+</div>
 
 </div>
 
-<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 const SUPABASE_URL = "https://segumusufzndmovrqdc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_8O3HrIpeKAAwPXIaqj3O1Q_ZXZs2Izc";
-
+const SUPABASE_KEY = "TU_KEY";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// GUARDAR
-document.getElementById("formSolicitante").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const dni = document.getElementById("dni").value.trim();
-  const nombre = document.getElementById("nombre").value.trim();
-  const telefono = document.getElementById("telefono").value.trim();
-  const email = document.getElementById("email").value.trim();
-
-  const { error } = await sb.from("solicitante")
-    .insert([{ dni, nombre, telefono, email }]);
-
-  if (error) return alert("Error: " + error.message);
-
-  alert("Guardado en la nube ✔");
-  e.target.reset();
-  cargar();
-});
-
-// MOSTRAR
-async function cargar() {
-  const { data, error } = await sb
-    .from("solicitante")
-    .select("*")
-    .order("id_cli", { ascending: false });
-
-  if (error) return alert(error.message);
-
-  document.getElementById("tabla").innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th><th>DNI</th><th>Nombre</th><th>Teléfono</th><th>Email</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.map(x => `
-          <tr>
-            <td>${x.id_cli}</td>
-            <td>${x.dni}</td>
-            <td>${x.nombre}</td>
-            <td>${x.telefono}</td>
-            <td>${x.email ?? ""}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
+// TABS
+function openTab(tab){
+document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+document.getElementById(tab).classList.add('active');
 }
 
-cargar();
+// AREAS
+formArea.onsubmit = async e=>{
+e.preventDefault();
+await sb.from('areas').insert([{area:area.value,estado:estado_area.value}]);
+cargarAreas(); e.target.reset();
+};
+async function cargarAreas(){
+const {data}=await sb.from('areas').select('*');
+tablaAreas.innerHTML=data.map(x=>`${x.id_area} - ${x.area}`).join('<br>');
+}
+
+// DOCUMENTOS
+formDocumento.onsubmit=async e=>{
+e.preventDefault();
+await sb.from('documentos').insert([{tipo:tipo_doc.value,folios:folios_doc.value,estado:estado_doc.value}]);
+cargarDocs(); e.target.reset();
+};
+async function cargarDocs(){
+const {data}=await sb.from('documentos').select('*');
+tablaDocumentos.innerHTML=data.map(x=>`${x.id_doc} - ${x.tipo}`).join('<br>');
+}
+
+// USUARIOS
+formUsuario.onsubmit=async e=>{
+e.preventDefault();
+await sb.from('usuarios').insert([{
+usuario:usu_nombre.value,
+login:usu_login.value,
+passs:usu_pass.value,
+tipo:usu_tipo.value,
+estado:usu_estado.value
+}]);
+cargarUsuarios(); e.target.reset();
+};
+async function cargarUsuarios(){
+const {data}=await sb.from('usuarios').select('*');
+tablaUsuarios.innerHTML=data.map(x=>`${x.id_usu} - ${x.usuario}`).join('<br>');
+}
+
+// SOLICITANTES
+formSolicitante.onsubmit=async e=>{
+e.preventDefault();
+await sb.from('solicitante').insert([{
+dni:cli_dni.value,
+nombre:cli_nombre.value,
+telefono:cli_telefono.value,
+email:cli_email.value
+}]);
+cargarSolicitantes(); e.target.reset();
+};
+async function cargarSolicitantes(){
+const {data}=await sb.from('solicitante').select('*');
+tablaSolicitantes.innerHTML=data.map(x=>`${x.id_cli} - ${x.nombre}`).join('<br>');
+}
+
+// TRAMITES
+formTramite.onsubmit=async e=>{
+e.preventDefault();
+await sb.from('tramites').insert([{
+idusu:tram_idusu.value,
+id_doc:tram_id_doc.value,
+id_cli:tram_id_cli.value,
+estado:tram_estado.value
+}]);
+cargarTramites(); e.target.reset();
+};
+async function cargarTramites(){
+const {data}=await sb.from('tramites').select('*');
+tablaTramites.innerHTML=data.map(x=>`${x.id_tram} - ${x.estado}`).join('<br>');
+}
+
+// COMBOS
+async function cargarCombos(){
+const u=await sb.from('usuarios').select('*');
+tram_idusu.innerHTML=u.data.map(x=>`<option value="${x.id_usu}">${x.usuario}</option>`);
+
+const d=await sb.from('documentos').select('*');
+tram_id_doc.innerHTML=d.data.map(x=>`<option value="${x.id_doc}">${x.tipo}</option>`);
+
+const c=await sb.from('solicitante').select('*');
+tram_id_cli.innerHTML=c.data.map(x=>`<option value="${x.id_cli}">${x.nombre}</option>`);
+}
+
+// INIT
+cargarAreas();
+cargarDocs();
+cargarUsuarios();
+cargarSolicitantes();
+cargarTramites();
+cargarCombos();
 </script>
 
 </body>
