@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema Trámite Documentario</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f5f7fb; color: #222; }
+    header { background: #1b4d89; color: #fff; padding: 14px 20px; }
+    header h1 { margin: 0; font-size: 22px; }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #ddd; }
+    .tab-btn {
+      border: 1px solid #bbb; background: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    }
+    .tab-btn.active { background: #1b4d89; color: #fff; border-color: #1b4d89; }
+
+    .container { padding: 18px 20px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    h2 { margin: 0 0 12px; }5
+    h3 { margin: 16px 0 8px; }
+
+    .form-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 12px;
+    }
+
+    input, select, textarea, button {
+      padding: 9px; border: 1px solid #bbb; border-radius: 8px; font-size: 14px;
+    }
+    textarea { resize: vertical; }
+    button { background: #1b4d89; color: #fff; border: none; cursor: pointer; }
+    button:hover { opacity: .95; }
+
+    .btn-warning { background: #e0a800; color: #fff; }
+    .btn-danger { background: #c82333; color: #fff; }
+
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #ddd; }
+    th, td { border: 1px solid #e3e3e3; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #eef3fb; }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge { padding: 3px 7px; border-radius: 999px; font-size: 12px; background: #e8eefb; color: #1b4d89; }
+    .muted { color: #666; font-size: 13px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sistema Trámite Documentario</h1>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="areas">Oficinas / Áreas</button>
+    <button class="tab-btn" data-tab="documentos">Documentos</button>
+    <button class="tab-btn" data-tab="adjuntos">Doc Adjuntos</button>
+    <button class="tab-btn" data-tab="usuarios">Usuarios</button>
+    <button class="tab-btn" data-tab="solicitantes">Solicitantes</button>
+    <button class="tab-btn" data-tab="tramites">Trámites</button>
+  </nav>
+
+  <main class="container">
+
+    <!-- AREAS -->
+    <section id="areas" class="tab-content active">
+      <h2>Nuevo Oficinas / Áreas</h2>
+      <form id="formArea" class="form-grid">
+        <input type="hidden" id="id_area">
+        <input type="text" id="area" placeholder="Área" required>
+        <input type="text" id="estado_area" placeholder="Estado (1 o 0 / ACTIVO)" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <h3>Listado - Oficinas / Áreas</h3>
+      <div id="tablaAreas"></div>
+    </section>
+
+    <!-- DOCUMENTOS -->
+    <section id="documentos" class="tab-content">
+      <h2>Nuevo Documento</h2>
+      <form id="formDocumento" class="form-grid">
+        <input type="hidden" id="id_doc">
+        <input type="text" id="tipo_doc" placeholder="Tipo" required>
+        <input type="number" id="folios_doc" placeholder="Folios" min="1" required>
+        <input type="text" id="estado_doc" placeholder="Estado" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <h3>Listado - Documentos</h3>
+      <div id="tablaDocumentos"></div>
+    </section>
+
+    <!-- ADJUNTOS -->
+    <section id="adjuntos" class="tab-content">
+      <h2>Nuevo Doc Adjunto</h2>
+      <form id="formAdjunto" class="form-grid">
+        <input type="hidden" id="id_adj">
+        <select id="adj_id_doc" required></select>
+        <input type="text" id="adj_descrip" placeholder="Descripción" required>
+        <select id="adj_id_area" required></select>
+        <input type="text" id="adj_estado" placeholder="Estado" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <h3>Listado - Doc Adjuntos</h3>
+      <div id="tablaAdjuntos"></div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section id="usuarios" class="tab-content">
+      <h2>Nuevo Usuario</h2>
+      <form id="formUsuario" class="form-grid">
+        <input type="hidden" id="id_usu">
+        <input type="text" id="usu_nombre" placeholder="Usuario (nombre)" required>
+        <input type="text" id="usu_login" placeholder="Login" required>
+        <input type="text" id="usu_pass" placeholder="Password" required>
+        <input type="text" id="usu_tipo" placeholder="Tipo (ADMIN/OPERADOR)" required>
+        <input type="text" id="usu_estado" placeholder="Estado" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <h3>Listado - Usuarios</h3>
+      <div id="tablaUsuarios"></div>
+    </section>
+
+    <!-- SOLICITANTES -->
+    <section id="solicitantes" class="tab-content">
+      <h2>Nuevo Solicitante</h2>
+      <form id="formSolicitante" class="form-grid">
+        <input type="hidden" id="id_cli">
+        <input type="text" id="cli_dni" placeholder="DNI" required>
+        <input type="text" id="cli_nombre" placeholder="Nombre" required>
+        <input type="text" id="cli_telefono" placeholder="Teléfono" required>
+        <input type="email" id="cli_email" placeholder="Email" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <h3>Listado - Solicitantes</h3>
+      <div id="tablaSolicitantes"></div>
+    </section>
+
+    <!-- TRAMITES -->
+    <section id="tramites" class="tab-content">
+      <h2>Nuevo Trámite</h2>
+      <form id="formTramite" class="form-grid">
+        <input type="hidden" id="id_tram">
+        <select id="tram_idusu" required></select>
+        <select id="tram_id_doc" required></select>
+        <select id="tram_id_cli" required></select>
+        <textarea id="tram_observacion" rows="2" placeholder="Observación"></textarea>
+        <input type="text" id="tram_estado" placeholder="Estado" required>
+        <button type="submit">Guardar</button>
+      </form>
+      <p class="muted">`idusu` = usuario, `id_doc` = documento, `id_cli` = solicitante</p>
+      <h3>Listado - Trámites</h3>
+      <div id="tablaTramites"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const STORAGE_KEY = "db_tramite_documentario_v2";
+
+    function initDB() {
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current) return JSON.parse(current);
+
+      const db = {
+        areas: [
+          { id_area: 1, area: "RECURSOS HUMANOS", estado: "1" },
+          { id_area: 2, area: "CATASTRO", estado: "1" },
+          { id_area: 3, area: "ADMINISTRACION", estado: "1" }
+        ],
+        documentos: [],
+        adjuntos: [],
+        usuarios: [
+          { id_usu: 1, usuario: "Administrador", login: "admin", passs: "1234", tipo: "ADMIN", estado: "ACTIVO" },
+          { id_usu: 2, usuario: "Operador", login: "operador", passs: "1234", tipo: "OPERADOR", estado: "ACTIVO" }
+        ],
+        solicitantes: [],
+        tramites: []
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      return db;
+    }
+
+    function getDB() { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+    function saveDB(db) { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+    function nextId(arr, field) { return arr.length ? Math.max(...arr.map(x => x[field])) + 1 : 1; }
+
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ===== AREAS =====
+    document.getElementById("formArea").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_area").value.trim();
+      const area = document.getElementById("area").value.trim().toUpperCase();
+      const estado = document.getElementById("estado_area").value.trim();
+
+      if (id) {
+        const i = db.areas.findIndex(x => x.id_area === Number(id));
+        if (i !== -1) { db.areas[i].area = area; db.areas[i].estado = estado; }
+      } else {
+        db.areas.push({ id_area: nextId(db.areas, "id_area"), area, estado });
+      }
+      saveDB(db); e.target.reset(); document.getElementById("id_area").value = "";
+      refreshAll();
+    });
+
+    function editarArea(id) {
+      const a = getDB().areas.find(x => x.id_area === id);
+      if (!a) return;
+      document.getElementById("id_area").value = a.id_area;
+      document.getElementById("area").value = a.area;
+      document.getElementById("estado_area").value = a.estado;
+    }
+    function eliminarArea(id) {
+      if (!confirm("¿Eliminar área?")) return;
+      const db = getDB();
+      db.areas = db.areas.filter(x => x.id_area !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderAreas() {
+      const rows = [...getDB().areas].sort((a,b)=>b.id_area-a.id_area);
+      const c = document.getElementById("tablaAreas");
+      if (!rows.length) { c.innerHTML = "<p>No hay áreas.</p>"; return; }
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_area</th><th>area</th><th>estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_area}</td><td>${x.area}</td><td><span class="badge">${x.estado}</span></td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarArea(${x.id_area})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarArea(${x.id_area})">Eliminar</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== DOCUMENTOS =====
+    document.getElementById("formDocumento").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_doc").value.trim();
+      const item = {
+        tipo: document.getElementById("tipo_doc").value.trim(),
+        folios: Number(document.getElementById("folios_doc").value),
+        estado: document.getElementById("estado_doc").value.trim()
+      };
+      if (id) {
+        const i = db.documentos.findIndex(x => x.id_doc === Number(id));
+        if (i !== -1) db.documentos[i] = { ...db.documentos[i], ...item };
+      } else {
+        db.documentos.push({ id_doc: nextId(db.documentos, "id_doc"), ...item });
+      }
+      saveDB(db); e.target.reset(); document.getElementById("id_doc").value = "";
+      refreshAll();
+    });
+
+    function editarDocumento(id) {
+      const d = getDB().documentos.find(x => x.id_doc === id);
+      if (!d) return;
+      document.getElementById("id_doc").value = d.id_doc;
+      document.getElementById("tipo_doc").value = d.tipo;
+      document.getElementById("folios_doc").value = d.folios;
+      document.getElementById("estado_doc").value = d.estado;
+    }
+    function eliminarDocumento(id) {
+      if (!confirm("¿Eliminar documento?")) return;
+      const db = getDB();
+      db.documentos = db.documentos.filter(x => x.id_doc !== id);
+      db.adjuntos = db.adjuntos.filter(x => x.id_doc !== id);
+      db.tramites = db.tramites.filter(x => x.id_doc !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderDocumentos() {
+      const rows = [...getDB().documentos].sort((a,b)=>b.id_doc-a.id_doc);
+      const c = document.getElementById("tablaDocumentos");
+      if (!rows.length) { c.innerHTML = "<p>No hay documentos.</p>"; return; }
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_doc</th><th>tipo</th><th>folios</th><th>estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_doc}</td><td>${x.tipo}</td><td>${x.folios}</td><td><span class="badge">${x.estado}</span></td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarDocumento(${x.id_doc})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarDocumento(${x.id_doc})">Eliminar</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== ADJUNTOS =====
+    document.getElementById("formAdjunto").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_adj").value.trim();
+      const item = {
+        id_doc: Number(document.getElementById("adj_id_doc").value),
+        descrip: document.getElementById("adj_descrip").value.trim(),
+        id_area: Number(document.getElementById("adj_id_area").value),
+        estado: document.getElementById("adj_estado").value.trim()
+      };
+      if (!item.id_doc || !item.id_area) { alert("Selecciona documento y área."); return; }
+
+      if (id) {
+        const i = db.adjuntos.findIndex(x => x.id_adj === Number(id));
+        if (i !== -1) db.adjuntos[i] = { ...db.adjuntos[i], ...item };
+      } else {
+        db.adjuntos.push({ id_adj: nextId(db.adjuntos, "id_adj"), ...item });
+      }
+      saveDB(db); e.target.reset(); document.getElementById("id_adj").value = "";
+      refreshAll();
+    });
+
+    function editarAdjunto(id) {
+      const a = getDB().adjuntos.find(x => x.id_adj === id);
+      if (!a) return;
+      document.getElementById("id_adj").value = a.id_adj;
+      document.getElementById("adj_id_doc").value = a.id_doc;
+      document.getElementById("adj_descrip").value = a.descrip;
+      document.getElementById("adj_id_area").value = a.id_area;
+      document.getElementById("adj_estado").value = a.estado;
+    }
+    function eliminarAdjunto(id) {
+      if (!confirm("¿Eliminar adjunto?")) return;
+      const db = getDB();
+      db.adjuntos = db.adjuntos.filter(x => x.id_adj !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderAdjuntos() {
+      const db = getDB();
+      const rows = [...db.adjuntos].sort((a,b)=>b.id_adj-a.id_adj);
+      const c = document.getElementById("tablaAdjuntos");
+      if (!rows.length) { c.innerHTML = "<p>No hay adjuntos.</p>"; return; }
+
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_adj</th><th>id_doc</th><th>descrip</th><th>id_area</th><th>estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_adj}</td>
+                <td>${x.id_doc}</td>
+                <td>${x.descrip}</td>
+                <td>${x.id_area}</td>
+                <td><span class="badge">${x.estado}</span></td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarAdjunto(${x.id_adj})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarAdjunto(${x.id_adj})">Eliminar</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== USUARIOS =====
+    document.getElementById("formUsuario").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_usu").value.trim();
+      const item = {
+        usuario: document.getElementById("usu_nombre").value.trim(),
+        login: document.getElementById("usu_login").value.trim(),
+        passs: document.getElementById("usu_pass").value.trim(),
+        tipo: document.getElementById("usu_tipo").value.trim().toUpperCase(),
+        estado: document.getElementById("usu_estado").value.trim()
+      };
+
+      const loginTaken = db.usuarios.some(u => u.login === item.login && u.id_usu !== Number(id || 0));
+      if (loginTaken) { alert("El login ya existe."); return; }
+
+      if (id) {
+        const i = db.usuarios.findIndex(x => x.id_usu === Number(id));
+        if (i !== -1) db.usuarios[i] = { ...db.usuarios[i], ...item };
+      } else {
+        db.usuarios.push({ id_usu: nextId(db.usuarios, "id_usu"), ...item });
+      }
+
+      saveDB(db); e.target.reset(); document.getElementById("id_usu").value = "";
+      refreshAll();
+    });
+
+    function editarUsuario(id) {
+      const u = getDB().usuarios.find(x => x.id_usu === id);
+      if (!u) return;
+      document.getElementById("id_usu").value = u.id_usu;
+      document.getElementById("usu_nombre").value = u.usuario;
+      document.getElementById("usu_login").value = u.login;
+      document.getElementById("usu_pass").value = u.passs;
+      document.getElementById("usu_tipo").value = u.tipo;
+      document.getElementById("usu_estado").value = u.estado;
+    }
+    function eliminarUsuario(id) {
+      if (!confirm("¿Eliminar usuario?")) return;
+      const db = getDB();
+      db.usuarios = db.usuarios.filter(x => x.id_usu !== id);
+      db.tramites = db.tramites.filter(x => x.idusu !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderUsuarios() {
+      const rows = [...getDB().usuarios].sort((a,b)=>b.id_usu-a.id_usu);
+      const c = document.getElementById("tablaUsuarios");
+      if (!rows.length) { c.innerHTML = "<p>No hay usuarios.</p>"; return; }
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_usu</th><th>usuario</th><th>login</th><th>tipo</th><th>estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_usu}</td><td>${x.usuario}</td><td>${x.login}</td><td>${x.tipo}</td><td><span class="badge">${x.estado}</span></td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarUsuario(${x.id_usu})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarUsuario(${x.id_usu})">Eliminar</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== SOLICITANTES =====
+    document.getElementById("formSolicitante").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_cli").value.trim();
+      const item = {
+        dni: document.getElementById("cli_dni").value.trim(),
+        nombre: document.getElementById("cli_nombre").value.trim(),
+        telefono: document.getElementById("cli_telefono").value.trim(),
+        email: document.getElementById("cli_email").value.trim()
+      };
+
+      const dniTaken = db.solicitantes.some(s => s.dni === item.dni && s.id_cli !== Number(id || 0));
+      if (dniTaken) { alert("El DNI ya existe."); return; }
+
+      if (id) {
+        const i = db.solicitantes.findIndex(x => x.id_cli === Number(id));
+        if (i !== -1) db.solicitantes[i] = { ...db.solicitantes[i], ...item };
+      } else {
+        db.solicitantes.push({ id_cli: nextId(db.solicitantes, "id_cli"), ...item });
+      }
+
+      saveDB(db); e.target.reset(); document.getElementById("id_cli").value = "";
+      refreshAll();
+    });
+
+    function editarSolicitante(id) {
+      const s = getDB().solicitantes.find(x => x.id_cli === id);
+      if (!s) return;
+      document.getElementById("id_cli").value = s.id_cli;
+      document.getElementById("cli_dni").value = s.dni;
+      document.getElementById("cli_nombre").value = s.nombre;
+      document.getElementById("cli_telefono").value = s.telefono;
+      document.getElementById("cli_email").value = s.email;
+    }
+    function eliminarSolicitante(id) {
+      if (!confirm("¿Eliminar solicitante?")) return;
+      const db = getDB();
+      db.solicitantes = db.solicitantes.filter(x => x.id_cli !== id);
+      db.tramites = db.tramites.filter(x => x.id_cli !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderSolicitantes() {
+      const rows = [...getDB().solicitantes].sort((a,b)=>b.id_cli-a.id_cli);
+      const c = document.getElementById("tablaSolicitantes");
+      if (!rows.length) { c.innerHTML = "<p>No hay solicitantes.</p>"; return; }
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_cli</th><th>dni</th><th>nombre</th><th>telefono</th><th>email</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_cli}</td><td>${x.dni}</td><td>${x.nombre}</td><td>${x.telefono}</td><td>${x.email}</td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarSolicitante(${x.id_cli})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarSolicitante(${x.id_cli})">Eliminar</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== TRAMITES =====
+    document.getElementById("formTramite").addEventListener("submit", e => {
+      e.preventDefault();
+      const db = getDB();
+      const id = document.getElementById("id_tram").value.trim();
+
+      const item = {
+        idusu: Number(document.getElementById("tram_idusu").value),
+        id_doc: Number(document.getElementById("tram_id_doc").value),
+        id_cli: Number(document.getElementById("tram_id_cli").value),
+        observacion: document.getElementById("tram_observacion").value.trim(),
+        estado: document.getElementById("tram_estado").value.trim()
+      };
+
+      if (!item.idusu || !item.id_doc || !item.id_cli) {
+        alert("Selecciona usuario, documento y solicitante.");
+        return;
+      }
+
+      if (id) {
+        const i = db.tramites.findIndex(x => x.id_tram === Number(id));
+        if (i !== -1) db.tramites[i] = { ...db.tramites[i], ...item };
+      } else {
+        db.tramites.push({ id_tram: nextId(db.tramites, "id_tram"), ...item });
+      }
+
+      saveDB(db); e.target.reset(); document.getElementById("id_tram").value = "";
+      refreshAll();
+    });
+
+    function editarTramite(id) {
+      const t = getDB().tramites.find(x => x.id_tram === id);
+      if (!t) return;
+      document.getElementById("id_tram").value = t.id_tram;
+      document.getElementById("tram_idusu").value = t.idusu;
+      document.getElementById("tram_id_doc").value = t.id_doc;
+      document.getElementById("tram_id_cli").value = t.id_cli;
+      document.getElementById("tram_observacion").value = t.observacion || "";
+      document.getElementById("tram_estado").value = t.estado;
+    }
+    function eliminarTramite(id) {
+      if (!confirm("¿Eliminar trámite?")) return;
+      const db = getDB();
+      db.tramites = db.tramites.filter(x => x.id_tram !== id);
+      saveDB(db); refreshAll();
+    }
+    function renderTramites() {
+      const db = getDB();
+      const rows = [...db.tramites].sort((a,b)=>b.id_tram-a.id_tram);
+      const c = document.getElementById("tablaTramites");
+      if (!rows.length) { c.innerHTML = "<p>No hay trámites.</p>"; return; }
+
+      c.innerHTML = `
+        <table>
+          <thead><tr><th>id_tram</th><th>idusu</th><th>id_doc</th><th>id_cli</th><th>observacion</th><th>estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${rows.map(x=>`
+              <tr>
+                <td>${x.id_tram}</td>
+                <td>${x.idusu}</td>
+                <td>${x.id_doc}</td>
+                <td>${x.id_cli}</td>
+                <td>${x.observacion || "-"}</td>
+                <td><span class="badge">${x.estado}</span></td>
+                <td class="actions">
+                  <button class="btn-warning" onclick="editarTramite(${x.id_tram})">Editar</button>
+                  <button class="btn-danger" onclick="eliminarTramite(${x.id_tram})">Eliminar</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+    }
+
+    // ===== COMBOS =====
+    function renderCombos() {
+      const db = getDB();
+
+      const selAdjDoc = document.getElementById("adj_id_doc");
+      selAdjDoc.innerHTML = `<option value="">Seleccione documento</option>` +
+        db.documentos.map(d => `<option value="${d.id_doc}">${d.id_doc} - ${d.tipo}</option>`).join("");
+
+      const selAdjArea = document.getElementById("adj_id_area");
+      selAdjArea.innerHTML = `<option value="">Seleccione área</option>` +
+        db.areas.map(a => `<option value="${a.id_area}">${a.id_area} - ${a.area}</option>`).join("");
+
+      const selUsu = document.getElementById("tram_idusu");
+      selUsu.innerHTML = `<option value="">Seleccione usuario</option>` +
+        db.usuarios.map(u => `<option value="${u.id_usu}">${u.id_usu} - ${u.usuario}</option>`).join("");
+
+      const selDoc = document.getElementById("tram_id_doc");
+      selDoc.innerHTML = `<option value="">Seleccione documento</option>` +
+        db.documentos.map(d => `<option value="${d.id_doc}">${d.id_doc} - ${d.tipo}</option>`).join("");
+
+      const selCli = document.getElementById("tram_id_cli");
+      selCli.innerHTML = `<option value="">Seleccione solicitante</option>` +
+        db.solicitantes.map(s => `<option value="${s.id_cli}">${s.id_cli} - ${s.nombre}</option>`).join("");
+    }
+
+    function refreshAll() {
+      renderAreas();
+      renderDocumentos();
+      renderAdjuntos();
+      renderUsuarios();
+      renderSolicitantes();
+      renderTramites();
+      renderCombos();
+    }
+
+    // Init
+    initDB();
+    refreshAll();
+
+    // Exponer funciones al HTML (onclick)
+    window.editarArea = editarArea;
+    window.eliminarArea = eliminarArea;
+    window.editarDocumento = editarDocumento;
+    window.eliminarDocumento = eliminarDocumento;
+    window.editarAdjunto = editarAdjunto;
+    window.eliminarAdjunto = eliminarAdjunto;
+    window.editarUsuario = editarUsuario;
+    window.eliminarUsuario = eliminarUsuario;
+    window.editarSolicitante = editarSolicitante;
+    window.eliminarSolicitante = eliminarSolicitante;
+    window.editarTramite = editarTramite;
+    window.eliminarTramite = eliminarTramite;
+  </script>
+</body>
+</html>
