@@ -30,6 +30,7 @@ th,td{border:1px solid #ddd;padding:8px}
 <div class="tabs">
 <button class="tab-btn active" onclick="openTab('areas')">Áreas</button>
 <button class="tab-btn" onclick="openTab('documentos')">Documentos</button>
+<button class="tab-btn" onclick="openTab('adjuntos')">Adjuntos</button>
 <button class="tab-btn" onclick="openTab('usuarios')">Usuarios</button>
 <button class="tab-btn" onclick="openTab('solicitantes')">Solicitantes</button>
 <button class="tab-btn" onclick="openTab('tramites')">Trámites</button>
@@ -52,12 +53,25 @@ th,td{border:1px solid #ddd;padding:8px}
 <div id="documentos" class="tab">
 <h3>Documentos</h3>
 <form id="formDocumento">
-<input id="tipo_doc" placeholder="Tipo" required>
+<input id="tipo_doc" placeholder="Tipo">
 <input id="folios_doc" type="number" placeholder="Folios">
 <input id="estado_doc" placeholder="Estado">
 <button>Guardar</button>
 </form>
 <div id="tablaDocumentos"></div>
+</div>
+
+<!-- ADJUNTOS -->
+<div id="adjuntos" class="tab">
+<h3>Adjuntos</h3>
+<form id="formAdjunto">
+<select id="adj_id_doc"></select>
+<input id="adj_descrip" placeholder="Descripción">
+<select id="adj_id_area"></select>
+<input id="adj_estado" placeholder="Estado">
+<button>Guardar</button>
+</form>
+<div id="tablaAdjuntos"></div>
 </div>
 
 <!-- USUARIOS -->
@@ -105,9 +119,10 @@ th,td{border:1px solid #ddd;padding:8px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-const SUPABASE_URL = "https://segumusufzndmovrqdc.supabase.co";
-const SUPABASE_KEY = "TU_KEY";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(
+"https://segumusufzndmovrqdc.supabase.co",
+"TU_ANON_KEY"
+);
 
 // TABS
 function openTab(tab){
@@ -116,25 +131,47 @@ document.getElementById(tab).classList.add('active');
 }
 
 // AREAS
-formArea.onsubmit = async e=>{
+formArea.onsubmit=async e=>{
 e.preventDefault();
 await sb.from('areas').insert([{area:area.value,estado:estado_area.value}]);
-cargarAreas(); e.target.reset();
+cargarAreas(); cargarCombos(); e.target.reset();
 };
 async function cargarAreas(){
 const {data}=await sb.from('areas').select('*');
-tablaAreas.innerHTML=data.map(x=>`${x.id_area} - ${x.area}`).join('<br>');
+tablaAreas.innerHTML=`<table><tr><th>ID</th><th>Área</th></tr>${
+data.map(x=>`<tr><td>${x.id_area}</td><td>${x.area}</td></tr>`).join('')
+}</table>`;
 }
 
 // DOCUMENTOS
 formDocumento.onsubmit=async e=>{
 e.preventDefault();
 await sb.from('documentos').insert([{tipo:tipo_doc.value,folios:folios_doc.value,estado:estado_doc.value}]);
-cargarDocs(); e.target.reset();
+cargarDocs(); cargarCombos(); e.target.reset();
 };
 async function cargarDocs(){
 const {data}=await sb.from('documentos').select('*');
-tablaDocumentos.innerHTML=data.map(x=>`${x.id_doc} - ${x.tipo}`).join('<br>');
+tablaDocumentos.innerHTML=`<table><tr><th>ID</th><th>Tipo</th></tr>${
+data.map(x=>`<tr><td>${x.id_doc}</td><td>${x.tipo}</td></tr>`).join('')
+}</table>`;
+}
+
+// ADJUNTOS
+formAdjunto.onsubmit=async e=>{
+e.preventDefault();
+await sb.from('adjuntos').insert([{
+id_doc:adj_id_doc.value,
+descrip:adj_descrip.value,
+id_area:adj_id_area.value,
+estado:adj_estado.value
+}]);
+cargarAdjuntos(); e.target.reset();
+};
+async function cargarAdjuntos(){
+const {data}=await sb.from('adjuntos').select('*');
+tablaAdjuntos.innerHTML=`<table><tr><th>ID</th><th>Doc</th><th>Área</th></tr>${
+data.map(x=>`<tr><td>${x.id_adj}</td><td>${x.id_doc}</td><td>${x.id_area}</td></tr>`).join('')
+}</table>`;
 }
 
 // USUARIOS
@@ -147,11 +184,13 @@ passs:usu_pass.value,
 tipo:usu_tipo.value,
 estado:usu_estado.value
 }]);
-cargarUsuarios(); e.target.reset();
+cargarUsuarios(); cargarCombos(); e.target.reset();
 };
 async function cargarUsuarios(){
 const {data}=await sb.from('usuarios').select('*');
-tablaUsuarios.innerHTML=data.map(x=>`${x.id_usu} - ${x.usuario}`).join('<br>');
+tablaUsuarios.innerHTML=`<table><tr><th>ID</th><th>Nombre</th></tr>${
+data.map(x=>`<tr><td>${x.id_usu}</td><td>${x.usuario}</td></tr>`).join('')
+}</table>`;
 }
 
 // SOLICITANTES
@@ -163,11 +202,13 @@ nombre:cli_nombre.value,
 telefono:cli_telefono.value,
 email:cli_email.value
 }]);
-cargarSolicitantes(); e.target.reset();
+cargarSolicitantes(); cargarCombos(); e.target.reset();
 };
 async function cargarSolicitantes(){
 const {data}=await sb.from('solicitante').select('*');
-tablaSolicitantes.innerHTML=data.map(x=>`${x.id_cli} - ${x.nombre}`).join('<br>');
+tablaSolicitantes.innerHTML=`<table><tr><th>ID</th><th>Nombre</th></tr>${
+data.map(x=>`<tr><td>${x.id_cli}</td><td>${x.nombre}</td></tr>`).join('')
+}</table>`;
 }
 
 // TRAMITES
@@ -183,16 +224,22 @@ cargarTramites(); e.target.reset();
 };
 async function cargarTramites(){
 const {data}=await sb.from('tramites').select('*');
-tablaTramites.innerHTML=data.map(x=>`${x.id_tram} - ${x.estado}`).join('<br>');
+tablaTramites.innerHTML=`<table><tr><th>ID</th><th>Estado</th></tr>${
+data.map(x=>`<tr><td>${x.id_tram}</td><td>${x.estado}</td></tr>`).join('')
+}</table>`;
 }
 
 // COMBOS
 async function cargarCombos(){
-const u=await sb.from('usuarios').select('*');
-tram_idusu.innerHTML=u.data.map(x=>`<option value="${x.id_usu}">${x.usuario}</option>`);
+const a=await sb.from('areas').select('*');
+adj_id_area.innerHTML=a.data.map(x=>`<option value="${x.id_area}">${x.area}</option>`);
 
 const d=await sb.from('documentos').select('*');
+adj_id_doc.innerHTML=d.data.map(x=>`<option value="${x.id_doc}">${x.tipo}</option>`);
 tram_id_doc.innerHTML=d.data.map(x=>`<option value="${x.id_doc}">${x.tipo}</option>`);
+
+const u=await sb.from('usuarios').select('*');
+tram_idusu.innerHTML=u.data.map(x=>`<option value="${x.id_usu}">${x.usuario}</option>`);
 
 const c=await sb.from('solicitante').select('*');
 tram_id_cli.innerHTML=c.data.map(x=>`<option value="${x.id_cli}">${x.nombre}</option>`);
@@ -201,6 +248,7 @@ tram_id_cli.innerHTML=c.data.map(x=>`<option value="${x.id_cli}">${x.nombre}</op
 // INIT
 cargarAreas();
 cargarDocs();
+cargarAdjuntos();
 cargarUsuarios();
 cargarSolicitantes();
 cargarTramites();
